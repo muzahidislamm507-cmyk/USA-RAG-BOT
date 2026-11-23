@@ -1,0 +1,32 @@
+# ============================================================
+# render.yaml — Render.com Blueprint (Infrastructure as Code)
+# https://render.com/docs/blueprint-spec
+# ============================================================
+
+services:
+  - type: web
+    name: rag-chatbot
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon                    # or singapore, frankfurt, ohio
+    plan: starter                     # free | starter | standard | pro
+
+    # Render sets $PORT automatically; our CMD already uses it
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false                   # prompt during first deploy
+      - key: ADMIN_KEY
+        sync: false
+      - key: PORT
+        value: 8000
+
+    healthCheckPath: /health
+
+    # Auto-deploy on push (if connected to a Git repo)
+    autoDeploy: true
+
+    # Persistent disk for runtime data (index, chunks, logs)
+    disk:
+      name: rag-data
+      mountPath: /app/data
+      sizeGB: 1

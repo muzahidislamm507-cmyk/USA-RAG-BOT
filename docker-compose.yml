@@ -1,0 +1,48 @@
+# ============================================================
+# docker-compose.yml — RAG Chatbot local/production deployment
+# ============================================================
+
+services:
+  rag-chatbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-chatbot
+    restart: unless-stopped
+
+    # Load secrets from .env file (GEMINI_API_KEY, ADMIN_KEY)
+    env_file:
+      - .env
+
+    ports:
+      - "8000:8000"
+
+    # Persist knowledge-base docs and runtime data across restarts
+    volumes:
+      - ./docs:/app/docs:ro                        # Knowledge base (read-only)
+      - ./unanswered.json:/app/unanswered.json      # Unanswered questions log
+      - ./vector_store.index:/app/vector_store.index # FAISS index
+      - ./chunks.pkl:/app/chunks.pkl                 # Chunked documents
+
+    # Resource limits (adjust as needed)
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

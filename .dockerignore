@@ -1,0 +1,56 @@
+# ============================================================
+# .dockerignore — keep the Docker build context lean & secure
+# ============================================================
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment secrets — NEVER bake into the image
+.env
+.env.*
+
+# Version control
+.git/
+.gitignore
+
+# Logs
+*.log
+rag_pipeline.log
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Docker files (no need to copy themselves)
+Dockerfile
+docker-compose.yml
+docker-compose*.yml
+.dockerignore
+
+# Deployment configs
+render.yaml
+railway.toml
+Procfile
+fly.toml
+
+# Documentation / dev helpers
+README.md
+start-bot.bat
+
+# Test / eval (optional — remove if you need eval inside container)
+# eval.py
