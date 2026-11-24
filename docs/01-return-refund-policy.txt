@@ -1,35 +1,41 @@
-URBANWEAR - RETURN AND REFUND POLICY
-(Demo store. All information is fictional.)
+URBANWEAR | RETURN & REFUND POLICY
+DEMO STORE NOTICE: URBANWEAR and all policies in this document are fictional and are provided for demonstration purposes only.
 
-1. Return window
-You can return most items within 30 days of the delivery date.
+1. RETURN WINDOW
+Most items may be returned within 30 days of the delivery date.
 
-2. Condition of returned items
-Items must be unworn, unwashed, and have the original tags attached. Items that show signs of wear, washing, perfume, or pet hair cannot be accepted.
+2. RETURN CONDITION
+Returned items must be unworn, unwashed, and have their original tags attached. Items showing signs of wear, washing, perfume, or pet hair cannot be accepted.
 
-3. Items that cannot be returned
-- Items marked "Final Sale" on the product page
-- Underwear, socks, and swimwear (for hygiene reasons)
+3. ITEMS THAT CANNOT BE RETURNED
+The following items are not eligible for return:
+- Products marked "Final Sale" on the product page
+- Underwear, socks, and swimwear (hygiene reasons)
 - Gift cards
-- Items returned after 30 days
+- Items returned more than 30 days after delivery
 
-4. How to start a return
-Step 1: Go to the Returns page on our website and enter your order number and email address.
-Step 2: Select the items you want to return and choose a reason.
-Step 3: Print the prepaid return label (or show the QR code at a drop-off point).
-Step 4: Pack the items and drop the parcel at the carrier location shown on the label.
+4. HOW TO START A RETURN
+1) Visit the Returns page on our website and enter your order number and email address.
+2) Select the item(s) you want to return and choose a return reason.
+3) Print the prepaid return label or show the provided QR code at a drop-off location.
+4) Pack the item(s) and drop off the parcel with the carrier shown on the label.
 
-5. Return shipping cost
-Returns within the United States are free. For international orders, the customer pays return shipping.
+5. RETURN SHIPPING
+- Returns shipped from within the United States are free.
+- For international orders, the customer is responsible for return shipping costs.
 
-6. Refunds
-Once we receive and inspect your return, we will email you. Refunds are issued to the original payment method within 5-7 business days after we receive the parcel. Your bank may take an extra 3-5 business days to show the money. Original shipping charges are not refunded unless the item arrived damaged or we sent the wrong item.
+6. REFUNDS
+After we receive and inspect your return, we will send you an email update. Approved refunds are issued to the original payment method within 5-7 business days after the parcel is received. Your bank may need an additional 3-5 business days to display the funds.
+Original shipping charges are not refunded unless the item arrived damaged or we sent the wrong item.
 
-7. Exchanges
-You can exchange an item for a different size or color for free, subject to stock availability. If the new item is not in stock, we will refund you instead.
+7. EXCHANGES
+You may exchange an eligible item for a different size or color at no extra cost, subject to stock availability. If the requested replacement is unavailable, we will issue a refund instead.
 
-8. Damaged, defective, or wrong items
-If your item arrives damaged, defective, or is not what you ordered, contact support@urbanwear.example within 7 days of delivery with your order number and a photo. We will send a replacement or give a full refund, including shipping, at no cost to you.
+8. DAMAGED, DEFECTIVE, OR INCORRECT ITEMS
+If an item arrives damaged, defective, or different from what you ordered, email support@urbanwear.example within 7 days of delivery. Include your order number and a photo of the issue. We will arrange a replacement or a full refund, including shipping, at no cost to you.
 
-9. Late or missing refunds
-If you have not received your refund after 10 business days, contact support@urbanwear.example with your order number.
+9. LATE OR MISSING REFUNDS
+If you have not received your refund 10 business days after the refund was issued, contact support@urbanwear.example and include your order number.
+
+IMPORTANT DEMO NOTE
+This is fictional sample policy content. The email address and website actions are placeholders for the demo store.
