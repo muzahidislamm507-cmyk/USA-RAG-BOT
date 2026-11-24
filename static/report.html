@@ -296,7 +296,8 @@ function renderHandoffs(wrap) {
     tr.append(lab(el('td', { className: 'time', textContent: item.time }), 'সময়'));
     const phoneCell = lab(el('td'), 'ফোন');
     // tel: লিংকে শুধু সংখ্যা আর + রাখা হয়
-    phoneCell.append(el('a', { className: 'phone', href: 'tel:' + String(item.phone).replace(/[^0-9+]/g, ''), textContent: item.phone }));
+    const isMail = String(item.phone).includes('@');
+    phoneCell.append(el('a', { className: 'phone', href: (isMail ? 'mailto:' + item.phone : 'tel:' + String(item.phone).replace(/[^0-9+]/g, '')), textContent: item.phone }));
     tr.append(phoneCell);
     tr.append(lab(el('td', { className: 'q', textContent: item.question }), 'প্রশ্ন'));
     const actCell = el('td', { style: 'white-space:nowrap' });

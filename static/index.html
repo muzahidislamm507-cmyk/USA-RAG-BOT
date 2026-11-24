@@ -1,90 +1,48 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>সহায়তা চ্যাট</title>
+<title>Support Chat</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- Markdown রেন্ডার (**বোল্ড**, লিস্ট ইত্যাদি) + DOMPurify দিয়ে XSS-নিরাপদ করা -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 <style>
   :root {
-    --navy-900: #0A1F44;
-    --navy-800: #0F2A5C;
-    --navy-700: #1A3A78;
-    --blue-500: #2F6FDE;
-    --blue-100: #E3ECFA;
-    --blue-50:  #F3F7FD;
-    --line:     #D6E0EE;
-    --ink:      #0F1E36;
-    --muted:    #5A6A82;
-    --danger:   #B3261E;
-    --white:    #FFFFFF;
-    --disabled: #9AA8C0;
+    --navy-900: #0A1F44; --navy-800: #0F2A5C; --navy-700: #1A3A78;
+    --blue-500: #2F6FDE; --blue-100: #E3ECFA; --blue-50: #F3F7FD;
+    --line: #D6E0EE; --ink: #0F1E36; --muted: #5A6A82;
+    --danger: #B3261E; --white: #FFFFFF; --disabled: #9AA8C0;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
-  body {
-    font-family: 'Hind Siliguri', 'Noto Sans Bengali', system-ui, sans-serif;
-    font-size: 16px; line-height: 1.6; color: var(--ink); background: var(--blue-50);
-  }
+  body { font-family: 'Inter', system-ui, sans-serif; font-size: 16px; line-height: 1.6; color: var(--ink); background: var(--blue-50); }
   button, input { font-family: inherit; font-size: inherit; }
   :focus-visible { outline: 3px solid var(--blue-500); outline-offset: 2px; }
 
-  /* ---------- হেডার ---------- */
   .topbar { background: var(--navy-900); color: var(--white); }
-  .topbar-inner {
-    max-width: 1120px; margin: 0 auto; padding: 14px 24px;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  }
+  .topbar-inner { max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .logo {
-    width: 40px; height: 40px; border-radius: 10px; flex: none;
-    background: var(--white); display: grid; place-items: center;
-  }
+  .logo { width: 40px; height: 40px; border-radius: 10px; flex: none; background: var(--white); display: grid; place-items: center; }
   .logo svg { width: 22px; height: 22px; fill: var(--navy-900); }
   .brand h1 { margin: 0; font-size: 19px; font-weight: 600; line-height: 1.3; }
   .brand p { margin: 0; font-size: 13px; color: #B7C6E4; line-height: 1.3; }
-  #resetBtn {
-    background: transparent; color: var(--white); border: 1px solid rgba(255,255,255,.45);
-    border-radius: 8px; padding: 7px 14px; cursor: pointer; font-size: 14px; white-space: nowrap;
-  }
+  #resetBtn { background: transparent; color: var(--white); border: 1px solid rgba(255,255,255,.45); border-radius: 8px; padding: 7px 14px; cursor: pointer; font-size: 14px; white-space: nowrap; }
   #resetBtn:hover { background: rgba(255,255,255,.12); }
-  #resetBtn:focus-visible { outline-color: var(--white); }
 
-  /* ---------- মূল লেআউট ---------- */
-  .layout {
-    max-width: 1120px; margin: 0 auto; padding: 24px;
-    display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start;
-  }
+  .layout { max-width: 1120px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
   .card { background: var(--white); border: 1px solid var(--line); border-radius: 12px; }
 
-  /* ---------- চ্যাট ---------- */
   .chatCard { display: flex; flex-direction: column; height: calc(100dvh - 140px); min-height: 460px; overflow: hidden; }
-  #chat {
-    flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 10px;
-  }
-  #chat:empty::before {
-    content: "আপনার প্রশ্ন লিখুন। আপলোড করা ডকুমেন্ট দেখে আমি উত্তর দেব।";
-    margin: auto; max-width: 320px; text-align: center; color: var(--muted);
-  }
+  #chat { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 10px; }
+  #chat:empty::before { content: "Type your question below. I will answer using our store documents."; margin: auto; max-width: 320px; text-align: center; color: var(--muted); }
   .msg { max-width: 82%; padding: 10px 15px; line-height: 1.65; overflow-wrap: anywhere; }
-  .user {
-    align-self: flex-end; background: var(--navy-800); color: var(--white);
-    border-radius: 14px 14px 4px 14px; white-space: pre-wrap;
-  }
-  .bot {
-    align-self: flex-start; background: var(--blue-100); color: var(--ink);
-    border-radius: 14px 14px 14px 4px;
-  }
+  .user { align-self: flex-end; background: var(--navy-800); color: var(--white); border-radius: 14px 14px 4px 14px; white-space: pre-wrap; }
+  .bot { align-self: flex-start; background: var(--blue-100); color: var(--ink); border-radius: 14px 14px 14px 4px; }
   .bot:empty { min-width: 64px; }
-  .bot:empty::before {
-    content: "●●●"; letter-spacing: 3px; font-size: 11px; color: var(--navy-700);
-    animation: pulse 1.2s ease-in-out infinite;
-  }
+  .bot:empty::before { content: "●●●"; letter-spacing: 3px; font-size: 11px; color: var(--navy-700); animation: pulse 1.2s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
   .bot p { margin: 6px 0; }
   .bot ul, .bot ol { margin: 6px 0; padding-left: 22px; }
@@ -99,63 +57,38 @@
   .bot > :last-child { margin-bottom: 0; }
   .sources { align-self: flex-start; font-size: 13px; color: var(--muted); margin: -4px 0 4px 4px; }
 
-  /* ফোন নম্বর চাওয়ার বক্স */
-  .handoff {
-    align-self: flex-start; max-width: 82%; background: var(--white);
-    border: 1px solid var(--line); border-left: 4px solid var(--navy-700);
-    border-radius: 8px; padding: 12px 14px; font-size: 15px;
-  }
-  .handoff input {
-    padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; margin: 8px 8px 0 0; width: 190px; max-width: 100%;
-  }
-  .handoff button {
-    padding: 8px 16px; border: none; border-radius: 8px; background: var(--navy-800); color: var(--white); cursor: pointer; margin-top: 8px;
-  }
+  .handoff { align-self: flex-start; max-width: 82%; background: var(--white); border: 1px solid var(--line); border-left: 4px solid var(--navy-700); border-radius: 8px; padding: 12px 14px; font-size: 15px; }
+  .handoff input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; margin: 8px 8px 0 0; width: 230px; max-width: 100%; }
+  .handoff button { padding: 8px 16px; border: none; border-radius: 8px; background: var(--navy-800); color: var(--white); cursor: pointer; margin-top: 8px; }
   .handoff button:hover { background: var(--navy-700); }
   .handoff button:disabled { background: var(--disabled); cursor: default; }
 
   #inputRow { display: flex; gap: 10px; padding: 14px; border-top: 1px solid var(--line); background: var(--white); }
-  #query {
-    flex: 1; min-width: 0; padding: 11px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
-  }
+  #query { flex: 1; min-width: 0; padding: 11px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); }
   #query::placeholder { color: #8795AB; }
   #query:focus { outline: none; border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(47,111,222,.2); }
-  #sendBtn {
-    padding: 0 24px; border: none; border-radius: 8px; background: var(--navy-800); color: var(--white);
-    font-weight: 500; cursor: pointer;
-  }
+  #sendBtn { padding: 0 24px; border: none; border-radius: 8px; background: var(--navy-800); color: var(--white); font-weight: 500; cursor: pointer; }
   #sendBtn:hover { background: var(--navy-700); }
   #sendBtn:disabled { background: var(--disabled); cursor: default; }
 
-  /* ---------- ডকুমেন্ট প্যানেল ---------- */
   #docsPanel { padding: 18px; }
   #docsPanel h2 { margin: 0; font-size: 17px; font-weight: 600; color: var(--navy-900); }
   .hint { margin: 2px 0 12px; font-size: 13px; color: var(--muted); }
   #docsList { font-size: 15px; color: var(--muted); }
-  .docItem {
-    display: flex; justify-content: space-between; align-items: center; gap: 10px;
-    padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--ink);
-  }
+  .docItem { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--ink); }
   .docItem:last-child { border-bottom: none; }
   .docItem > span:first-child { min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
   .docRight { display: flex; align-items: center; gap: 10px; flex: none; }
   .docChunks { color: var(--muted); font-size: 13px; }
-  .delBtn {
-    background: none; color: var(--danger); font-size: 13px; padding: 3px 10px;
-    border: 1px solid #EBC5C2; border-radius: 6px; cursor: pointer;
-  }
+  .delBtn { background: none; color: var(--danger); font-size: 13px; padding: 3px 10px; border: 1px solid #EBC5C2; border-radius: 6px; cursor: pointer; }
   .delBtn:hover { background: #FDECEA; }
   .delBtn:disabled { color: var(--disabled); border-color: var(--line); background: none; cursor: default; }
-  #uploadBtn {
-    width: 100%; margin-top: 14px; padding: 10px 14px; background: var(--white); color: var(--navy-800);
-    border: 1.5px solid var(--navy-800); border-radius: 8px; font-weight: 500; cursor: pointer;
-  }
+  #uploadBtn { width: 100%; margin-top: 14px; padding: 10px 14px; background: var(--white); color: var(--navy-800); border: 1.5px solid var(--navy-800); border-radius: 8px; font-weight: 500; cursor: pointer; }
   #uploadBtn:hover { background: var(--blue-50); }
   #uploadBtn:disabled { color: var(--disabled); border-color: var(--disabled); cursor: default; background: var(--white); }
   #uploadStatus { font-size: 14px; margin-top: 10px; color: var(--muted); overflow-wrap: anywhere; }
   #uploadStatus:empty { display: none; }
 
-  /* ---------- ছোট স্ক্রিন ---------- */
   @media (max-width: 860px) {
     .layout { grid-template-columns: minmax(0, 1fr); padding: 16px; gap: 16px; }
     .topbar-inner { padding: 12px 16px; }
@@ -163,9 +96,7 @@
     .chatCard { height: calc(100dvh - 150px); min-height: 420px; }
     .msg, .handoff { max-width: 92%; }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .bot:empty::before { animation: none; opacity: .7; }
-  }
+  @media (prefers-reduced-motion: reduce) { .bot:empty::before { animation: none; opacity: .7; } }
 </style>
 </head>
 <body>
@@ -176,30 +107,29 @@
           <svg viewBox="0 0 24 24"><path d="M4 3h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg>
         </div>
         <div>
-          <h1>সহায়তা চ্যাট</h1>
-          <p>আমাদের ডকুমেন্ট থেকে সঠিক উত্তর</p>
+          <h1>Support Chat</h1>
+          <p>Accurate answers from our documents</p>
         </div>
       </div>
-      <button id="resetBtn" onclick="resetSession()">নতুন কথোপকথন</button>
+      <button id="resetBtn" onclick="resetSession()">New conversation</button>
     </div>
   </header>
 
   <main class="layout">
-    <section class="card chatCard" aria-label="চ্যাট">
+    <section class="card chatCard" aria-label="Chat">
       <div id="chat" role="log" aria-live="polite"></div>
       <div id="inputRow">
-        <input id="query" type="text" placeholder="আপনার প্রশ্ন লিখুন..." aria-label="আপনার প্রশ্ন" autocomplete="off" />
-        <button id="sendBtn" onclick="sendQuery()">পাঠান</button>
+        <input id="query" type="text" placeholder="Type your question..." aria-label="Your question" autocomplete="off" />
+        <button id="sendBtn" onclick="sendQuery()">Send</button>
       </div>
     </section>
 
-    <!-- #Document Management UI: ইনডেক্স হওয়া ডকুমেন্টের তালিকা + নতুন ফাইল আপলোড -->
-    <aside class="card" id="docsPanel" aria-label="ডকুমেন্ট">
-      <h2>ইনডেক্স করা ডকুমেন্ট</h2>
-      <p class="hint">আপলোড বা মুছতে Admin key লাগবে।</p>
-      <div id="docsList">লোড হচ্ছে...</div>
-      <input type="file" id="fileInput" accept=".txt,.pdf" style="display:none" onchange="uploadFile()" />
-      <button id="uploadBtn" onclick="document.getElementById('fileInput').click()">নতুন ডকুমেন্ট আপলোড করুন</button>
+    <aside class="card" id="docsPanel" aria-label="Documents">
+      <h2>Indexed documents</h2>
+      <p class="hint">An admin key is needed to upload or delete.</p>
+      <div id="docsList">Loading...</div>
+      <input type="file" id="fileInput" accept=".txt,.pdf,.docx" style="display:none" onchange="uploadFile()" />
+      <button id="uploadBtn" onclick="document.getElementById('fileInput').click()">Upload new document</button>
       <div id="uploadStatus"></div>
     </aside>
   </main>
@@ -208,21 +138,16 @@
 const chat = document.getElementById('chat');
 const input = document.getElementById('query');
 const btn = document.getElementById('sendBtn');
-let sessionId = null;  // #Conversation Memory: সার্ভার প্রথম উত্তরে এটা দেবে, তারপর থেকে প্রতি রিকোয়েস্টে পাঠানো হবে
+let sessionId = null;
 
 function resetSession() {
   if (sessionId) {
-    fetch('/reset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId })
-    });
+    fetch('/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: sessionId }) });
   }
   sessionId = null;
   chat.innerHTML = '';
 }
 
-// বটের উত্তর Markdown হিসেবে দেখায়। লাইব্রেরি লোড না হলে সাধারণ টেক্সট (লাইন ভাঙা সহ) দেখায়।
 function setBotText(el, text) {
   if (window.marked && window.DOMPurify) {
     el.style.whiteSpace = '';
@@ -241,7 +166,7 @@ function addMessage(text, cls, sources) {
   if (sources && sources.length) {
     const s = document.createElement('div');
     s.className = 'sources';
-    s.textContent = 'সূত্র: ' + sources.join(', ');
+    s.textContent = 'Sources: ' + sources.join(', ');
     chat.appendChild(s);
   }
   chat.scrollTop = chat.scrollHeight;
@@ -255,7 +180,6 @@ async function sendQuery() {
   input.value = '';
   btn.disabled = true;
 
-  // #Streaming Answer: একটা খালি বাবল বানিয়ে রাখি, তারপর টুকরো টুকরো টেক্সট এসে ওটা ভরবে
   const botDiv = addMessage('', 'bot');
   let fullText = '';
 
@@ -267,7 +191,7 @@ async function sendQuery() {
     });
     if (!res.ok || !res.body) {
       const err = await res.json().catch(() => ({}));
-      botDiv.textContent = '❌ ' + (err.detail || 'একটা সমস্যা হয়েছে');
+      botDiv.textContent = '❌ ' + (err.detail || 'Something went wrong');
       return;
     }
 
@@ -279,10 +203,8 @@ async function sendQuery() {
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-
-      // ndjson: প্রতিটা সম্পূর্ণ লাইন একটা JSON event
       let lines = buffer.split('\n');
-      buffer = lines.pop();  // শেষ (অসম্পূর্ণ) অংশটা পরের চাঙ্কের জন্য রেখে দিই
+      buffer = lines.pop();
 
       for (const line of lines) {
         if (!line.trim()) continue;
@@ -299,71 +221,68 @@ async function sendQuery() {
           if (event.sources && event.sources.length) {
             const s = document.createElement('div');
             s.className = 'sources';
-            s.textContent = 'সূত্র: ' + event.sources.join(', ');
+            s.textContent = 'Sources: ' + event.sources.join(', ');
             chat.appendChild(s);
           }
-          // উত্তর তৈরি হয়নি (ফাঁকা বাবল থেকে গেলে) — লোডিং চিহ্ন যেন আটকে না থাকে
-          if (!fullText && !botDiv.textContent) botDiv.textContent = 'এই প্রশ্নের উত্তর পাওয়া যায়নি।';
-          // #Handoff: উত্তর না পেলে ফোন নম্বর চাওয়া
+          if (!fullText && !botDiv.textContent) botDiv.textContent = 'I could not find an answer to this question.';
           if (event.not_found) showHandoffBox(q);
         }
       }
     }
   } catch (e) {
-    botDiv.textContent = '❌ সার্ভারে পৌঁছানো যাচ্ছে না।';
+    botDiv.textContent = '❌ Cannot reach the server.';
   } finally {
     btn.disabled = false;
   }
 }
 
-// #Handoff: বট উত্তর না দিতে পারলে ফোন নম্বর নেওয়ার ছোট বক্স
+// Handoff: ask for an email when the bot cannot answer
 function showHandoffBox(question) {
   const box = document.createElement('div');
   box.className = 'handoff';
   const msg = document.createElement('div');
-  msg.textContent = 'উত্তর পাননি? আপনার ফোন নম্বর দিন, আমাদের একজন আপনাকে জানাবে।';
-  const phone = document.createElement('input');
-  phone.type = 'tel';
-  phone.placeholder = 'ফোন নম্বর';
-  phone.setAttribute('aria-label', 'ফোন নম্বর');
-  phone.maxLength = 20;
+  msg.textContent = "Didn't get your answer? Leave your email and our team will get back to you.";
+  const email = document.createElement('input');
+  email.type = 'email';
+  email.placeholder = 'you@example.com';
+  email.setAttribute('aria-label', 'Email address');
+  email.maxLength = 20;
   const send = document.createElement('button');
-  send.textContent = 'পাঠান';
+  send.textContent = 'Send';
   const note = document.createElement('div');
   note.style.marginTop = '6px';
   send.onclick = async () => {
-    if (!phone.value.trim()) return;
+    if (!email.value.trim()) return;
     send.disabled = true;
     try {
       const res = await fetch('/handoff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: question, phone: phone.value.trim() })
+        body: JSON.stringify({ question: question, phone: email.value.trim() })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        note.textContent = '❌ ' + (data.detail || 'পাঠানো যায়নি');
+        note.textContent = '❌ ' + (data.detail || 'Could not send');
         send.disabled = false;
         return;
       }
-      box.textContent = '✅ ধন্যবাদ! আপনার নম্বর রাখা হয়েছে, দোকানের লোক শীঘ্রই যোগাযোগ করবে।';
+      box.textContent = '✅ Thank you! We saved your email and will contact you soon.';
     } catch (e) {
-      note.textContent = '❌ সার্ভারে পৌঁছানো যাচ্ছে না।';
+      note.textContent = '❌ Cannot reach the server.';
       send.disabled = false;
     }
   };
-  box.append(msg, phone, send, note);
+  box.append(msg, email, send, note);
   chat.appendChild(box);
   chat.scrollTop = chat.scrollHeight;
 }
 
 input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendQuery(); });
 
-// Admin key: আপলোড/ডিলিটের জন্য লাগে। একবার দিলে এই ট্যাবে মনে রাখে, ট্যাব বন্ধ করলে মুছে যায়।
 function getAdminKey() {
   let key = sessionStorage.getItem('adminKey');
   if (!key) {
-    key = prompt('আপলোড/ডিলিটের জন্য Admin key দিন:');
+    key = prompt('Enter the admin key to upload or delete:');
     if (!key || !key.trim()) return null;
     key = key.trim();
     sessionStorage.setItem('adminKey', key);
@@ -372,31 +291,29 @@ function getAdminKey() {
 }
 function clearAdminKey() { sessionStorage.removeItem('adminKey'); }
 
-// #Document Management UI
 async function loadDocuments() {
   const docsList = document.getElementById('docsList');
   try {
     const res = await fetch('/documents');
-    if (!res.ok) throw new Error('HTTP ' + res.status);  // আগে 404 হলেও "কোনো ডকুমেন্ট নেই" দেখাত
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (!data.documents || data.documents.length === 0) {
-      docsList.textContent = 'এখনো কোনো ডকুমেন্ট ইনডেক্স করা হয়নি।';
+      docsList.textContent = 'No documents indexed yet.';
       return;
     }
     docsList.innerHTML = '';
     data.documents.forEach(doc => {
       const row = document.createElement('div');
       row.className = 'docItem';
-      // textContent ব্যবহার: ফাইলের নাম কখনো HTML হিসেবে চলবে না (XSS প্রতিরোধ)
       const nameEl = document.createElement('span');
       nameEl.textContent = doc.name;
       const chunksEl = document.createElement('span');
       chunksEl.className = 'docChunks';
-      chunksEl.textContent = doc.chunks + 'টি অংশ';
+      chunksEl.textContent = doc.chunks + ' parts';
       const delEl = document.createElement('button');
       delEl.className = 'delBtn';
-      delEl.textContent = 'মুছুন';
-      delEl.title = 'এই ডকুমেন্ট ইনডেক্স থেকে মুছে ফেলুন';
+      delEl.textContent = 'Delete';
+      delEl.title = 'Remove this document from the index';
       delEl.onclick = () => deleteDocument(doc.name, delEl);
       const rightEl = document.createElement('span');
       rightEl.className = 'docRight';
@@ -405,31 +322,31 @@ async function loadDocuments() {
       docsList.appendChild(row);
     });
   } catch (e) {
-    docsList.textContent = 'ডকুমেন্ট তালিকা লোড করা যায়নি।';
+    docsList.textContent = 'Could not load the document list.';
   }
 }
 
 async function deleteDocument(name, btnEl) {
   const status = document.getElementById('uploadStatus');
-  if (!confirm(`"${name}" ডকুমেন্টটা মুছে ফেলবেন? এটা আর ফেরত আনা যাবে না।`)) return;
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
   const adminKey = getAdminKey();
   if (!adminKey) return;
 
   btnEl.disabled = true;
-  status.textContent = `⏳ "${name}" মোছা হচ্ছে...`;
+  status.textContent = `⏳ Deleting "${name}"...`;
   try {
     const res = await fetch('/documents/' + encodeURIComponent(name), { method: 'DELETE', headers: { 'X-Admin-Key': adminKey } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      if (res.status === 401) clearAdminKey();  // ভুল key হলে পরের বার আবার জিজ্ঞেস করবে
-      status.textContent = '❌ ' + (data.detail || 'মোছা ব্যর্থ হয়েছে');
+      if (res.status === 401) clearAdminKey();
+      status.textContent = '❌ ' + (data.detail || 'Delete failed');
       btnEl.disabled = false;
       return;
     }
-    status.textContent = `"${data.deleted}" মুছে ফেলা হয়েছে।`;
+    status.textContent = `"${data.deleted}" was deleted.`;
     loadDocuments();
   } catch (e) {
-    status.textContent = '❌ সার্ভারে পৌঁছানো যাচ্ছে না।';
+    status.textContent = '❌ Cannot reach the server.';
     btnEl.disabled = false;
   }
 }
@@ -447,27 +364,27 @@ async function uploadFile() {
   formData.append('file', file);
 
   uploadBtn.disabled = true;
-  status.textContent = `⏳ "${file.name}" আপলোড ও ইনডেক্স হচ্ছে... (একটু সময় লাগতে পারে)`;
+  status.textContent = `⏳ Uploading and indexing "${file.name}"... (this can take a moment)`;
 
   try {
     const res = await fetch('/upload', { method: 'POST', headers: { 'X-Admin-Key': adminKey }, body: formData });
     const data = await res.json();
     if (!res.ok) {
       if (res.status === 401) clearAdminKey();
-      status.textContent = '❌ ' + (data.detail || 'আপলোড ব্যর্থ হয়েছে');
+      status.textContent = '❌ ' + (data.detail || 'Upload failed');
       return;
     }
-    status.textContent = `✅ "${data.filename}" যোগ হয়েছে।`;
+    status.textContent = `✅ "${data.filename}" was added.`;
     loadDocuments();
   } catch (e) {
-    status.textContent = '❌ সার্ভারে পৌঁছানো যাচ্ছে না।';
+    status.textContent = '❌ Cannot reach the server.';
   } finally {
     uploadBtn.disabled = false;
     fileInput.value = '';
   }
 }
 
-loadDocuments();  // পেজ লোড হওয়ার সাথে সাথেই তালিকা দেখাও
+loadDocuments();
 </script>
 </body>
 </html>

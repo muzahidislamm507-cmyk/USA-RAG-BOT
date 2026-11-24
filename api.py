@@ -389,11 +389,12 @@ def _remove_quietly(path: str):
 HANDOFF_FILE = os.path.join(os.getenv("DATA_DIR", "."), "handoffs.json")
 _handoff_lock = threading.Lock()
 _PHONE_OK = re.compile(r"^[0-9+\-\s()]{6,20}$")
+_EMAIL_OK = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class HandoffRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=1000)
-    phone: str = Field(..., min_length=6, max_length=20)
+    phone: str = Field(..., min_length=6, max_length=100)
 
 
 def _read_handoffs() -> list:
@@ -414,8 +415,10 @@ def create_handoff(req: HandoffRequest, request: Request):
 
     # বাংলা সংখ্যা (০১৭১...) লিখলেও চলবে: ইংরেজি সংখ্যায় বদলে নেওয়া হয়
     phone = req.phone.strip().translate(str.maketrans("০১২৩৪৫৬৭৮৯", "0123456789"))
-    if not _PHONE_OK.match(phone) or sum(ch.isdigit() for ch in phone) < 6:
-        raise HTTPException(status_code=400, detail="ফোন নম্বরটা ঠিক মনে হচ্ছে না, আরেকবার দেখে লিখুন।")
+    is_email = bool(_EMAIL_OK.match(phone))
+    is_phone = bool(_PHONE_OK.match(phone)) and sum(ch.isdigit() for ch in phone) >= 6
+    if not (is_email or is_phone):
+        raise HTTPException(status_code=400, detail="That does not look like a valid email or phone number. Please check and try again.")
 
     with _handoff_lock:
         items = _read_handoffs()
