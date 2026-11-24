@@ -1,77 +1,86 @@
-URBANWEAR - FREQUENTLY ASKED QUESTIONS
-(Demo store. All information is fictional.)
+URBANWEAR | FREQUENTLY ASKED QUESTIONS (FAQ)
+DEMO STORE NOTICE: URBANWEAR and all information in this FAQ are fictional sample content for demonstration purposes only.
 
 ORDERS AND PAYMENT
 
-Q: What payment methods do you accept?
+Q: Which payment methods do you accept?
 A: We accept Visa, Mastercard, American Express, PayPal, and Apple Pay. We do not accept cash on delivery.
 
 Q: Can I cancel or change my order?
-A: You can cancel or change your order within 1 hour of placing it. Contact support@urbanwear.example with your order number as soon as possible. After 1 hour, the order goes to our warehouse and we cannot guarantee changes. If the order has already shipped, please wait to receive it and use our return process.
+A: You may request a cancellation or change within 1 hour of placing the order. Email support@urbanwear.example with your order number as soon as possible. After 1 hour, the order may have entered warehouse processing, so changes are not guaranteed. If the order has shipped, wait for delivery and follow the return process if the item is eligible.
 
-Q: How do I know my order was placed successfully?
-A: You will receive an order confirmation email within a few minutes. If you do not see it, check your spam folder or contact us.
+Q: How do I know whether my order was placed successfully?
+A: You should receive an order confirmation email within a few minutes. Check your spam folder if it is missing. If you still cannot find it, contact support@urbanwear.example.
 
 Q: Do you have a physical store?
-A: No, UrbanWear is an online-only store.
+A: No. URBANWEAR is an online-only demo store.
 
 DISCOUNTS
 
-Q: Do you have a discount code?
-A: New customers get 10% off their first order with the code WELCOME10. The code works once per customer, cannot be combined with other offers, and does not apply to Final Sale items.
+Q: Is there a discount code for new customers?
+A: New customers can use WELCOME10 for 10% off their first order. The code can be used once per customer, cannot be combined with other offers, and does not apply to Final Sale items.
 
-Q: Can I use two discount codes on one order?
-A: No, only one discount code can be used per order.
+Q: Can I use more than one discount code?
+A: No. Only one discount code can be used per order.
 
 Q: Do you offer student or military discounts?
-A: Not at the moment.
+A: No student or military discount is currently listed in this demo policy.
 
 SHIPPING AND TRACKING
 
-Q: How long does delivery take?
-A: Standard shipping in the US takes 3-5 business days. Express takes 1-2 business days. International orders take 7-14 business days. Orders are processed in 1-2 business days before shipping.
+Q: How long does shipping take?
+A: Orders are processed within 1-2 business days. US Standard Shipping takes an estimated 3-5 business days, and Express Shipping takes 1-2 business days. International shipping takes an estimated 7-14 business days.
 
-Q: Is shipping free?
-A: US orders over $75 get free standard shipping. Otherwise standard shipping is $4.99.
+Q: How much does US shipping cost?
+A: Standard Shipping costs $4.99 and is free on orders over $75. Express Shipping costs $12.99. Express Shipping is not available for PO boxes.
 
-Q: Where is my order?
-A: We email a tracking number within 24 hours after your order ships. Use the link in that email, or the Track Order page on our website with your order number and email.
+Q: How can I track my order?
+A: We send a tracking email within 24 hours after the order ships. Use the link in that email, or visit the Track Order page and enter your order number and email address.
 
-Q: Do you ship internationally?
-A: Yes, to Canada, the UK, the EU, and Australia. Shipping starts at $14.99 and customers pay any import duties.
+Q: Which countries do you ship to?
+A: We ship to Canada, the United Kingdom, countries in the European Union, and Australia. International shipping starts at $14.99. Customers are responsible for any customs duties or import taxes charged by their country.
+
+Q: Can I change my shipping address?
+A: Contact us within 1 hour of placing the order if the address is incorrect. We cannot change the address after the order has shipped.
 
 RETURNS AND EXCHANGES
 
-Q: What is your return policy?
-A: You can return most items within 30 days of delivery if they are unworn, unwashed, and have tags attached. Returns in the US are free.
+Q: What is the return window?
+A: Most items may be returned within 30 days of delivery if they are unworn, unwashed, and have their original tags attached.
 
-Q: How long does a refund take?
-A: Refunds are issued within 5-7 business days after we receive your return, to the original payment method.
+Q: Are returns free?
+A: Returns shipped from within the United States are free. International customers pay return shipping.
 
-Q: Can I exchange for a different size?
-A: Yes, exchanges are free, subject to stock availability.
+Q: How long do refunds take?
+A: After we receive and inspect the return, approved refunds are issued to the original payment method within 5-7 business days. Your bank may need an additional 3-5 business days to display the funds.
 
-Q: Which items cannot be returned?
-A: Final Sale items, underwear, socks, swimwear, and gift cards.
+Q: Can I exchange an item for another size or color?
+A: Yes. Eligible exchanges are free and depend on stock availability. If the requested item is unavailable, we will issue a refund instead.
 
-Q: My item arrived damaged. What should I do?
-A: Email support@urbanwear.example within 7 days with your order number and a photo. We will send a replacement or refund you fully, including shipping.
+Q: Which items are not returnable?
+A: Final Sale products, underwear, socks, swimwear, and gift cards cannot be returned. Items returned more than 30 days after delivery are also ineligible.
 
-PRODUCTS AND CARE
+Q: What if my order arrives damaged, defective, or incorrect?
+A: Email support@urbanwear.example within 7 days of delivery. Include your order number and a photo. We will arrange a replacement or a full refund, including shipping, at no cost.
 
-Q: How do I choose my size?
-A: See our Size Guide. If you are between sizes, we recommend the larger size for regular-fit items. Contact us with your height and weight if you need help.
+PRODUCTS AND SIZING
 
-Q: Are your clothes sustainable?
-A: Our Classic Cotton Tee uses organic cotton, and our Rain Jacket and Puffer Vest use recycled polyester. Not all products are made from sustainable materials.
+Q: How do I choose the right size?
+A: Check the Size Guide. Measurements are in inches. For the Classic Cotton Tee and Everyday Hoodie, choose the larger size if you are between sizes. The Size Guide includes fit notes for other products.
 
-Q: Will the linen dress shrink?
-A: Linen can shrink slightly in the first wash. Wash cold and hang dry to reduce shrinking.
+Q: Are the products made with sustainable materials?
+A: The Classic Cotton Tee uses organic cotton. The Waterproof Rain Jacket and Puffer Vest use recycled polyester. Not all products are made from sustainable materials.
+
+Q: Will the Linen Summer Dress shrink?
+A: Linen may shrink slightly during the first wash. Wash it in cold water and hang it to dry to help reduce shrinkage.
 
 CONTACT
 
 Q: How can I contact customer support?
-A: Email support@urbanwear.example. Our team is available Monday to Friday, 9 AM to 6 PM EST, and replies within 24 hours on business days.
+A: Email support@urbanwear.example. Demo support hours are Monday-Friday, 9:00 AM-6:00 PM Eastern Standard Time (EST). The team aims to reply within 24 hours on business days.
 
-Q: Do you have phone support?
-A: No, we currently offer email support only.
+Q: Do you offer phone support?
+A: No. Email is the only support channel listed for this demo store.
+
+IMPORTANT DEMO NOTE
+URBANWEAR is a fictional demo brand. Product information, prices, discount codes, policies, contact details, and website features are sample data, not real commercial offers.
