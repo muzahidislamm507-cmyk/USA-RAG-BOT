@@ -4,21 +4,21 @@ All prices are in US dollars (USD).
 
 MEN'S AND UNISEX CLOTHING
 
-1. Classic Cotton Tee | SKU: UW-101
+Classic Cotton Tee (UW-101)
 Price: $24.99
 Material: 100% organic cotton
 Colors: White, Black, Navy, Grey
 Sizes: S-XXL (men's)
 Care: Machine wash cold; tumble dry low.
 
-2. Everyday Hoodie | SKU: UW-102
+Everyday Hoodie (UW-102)
 Price: $54.99
 Material: 80% cotton, 20% polyester fleece
 Colors: Black, Charcoal, Forest Green
 Sizes: S-XXL (men's)
 Care: Machine wash cold; do not bleach.
 
-3. Oversized Hoodie | SKU: UW-103
+Oversized Hoodie (UW-103)
 Price: $59.99
 Material: 100% heavyweight cotton
 Colors: Cream, Black, Dusty Pink
@@ -26,28 +26,28 @@ Sizes: S-XL (unisex)
 Fit: Oversized, loose fit.
 Care: Machine wash cold; tumble dry low.
 
-4. Slim Fit Jeans | SKU: UW-201
+Slim Fit Jeans (UW-201)
 Price: $64.99
 Material: 98% cotton, 2% elastane (stretch denim)
 Colors: Dark Blue, Light Blue, Black
 Sizes: Waist 30-36; inseam 30, 32, or 34 in
 Care: Machine wash inside out in cold water.
 
-5. Relaxed Chino Pants | SKU: UW-202
+Relaxed Chino Pants (UW-202)
 Price: $59.99
 Material: 97% cotton, 3% elastane
 Colors: Khaki, Olive, Navy
 Sizes: Waist 30-36; inseam 30, 32, or 34 in
 Care: Machine wash warm; iron on medium if needed.
 
-6. Waterproof Rain Jacket | SKU: UW-401
+Waterproof Rain Jacket (UW-401)
 Price: $99.99
 Material: Recycled polyester shell with waterproof coating
 Colors: Black, Olive, Yellow
 Sizes: S-XXL (unisex)
 Care: Machine wash cold; do not use fabric softener.
 
-7. Puffer Vest | SKU: UW-402
+Puffer Vest (UW-402)
 Price: $84.99
 Material: Recycled polyester fill and shell
 Colors: Black, Navy
@@ -55,7 +55,7 @@ Sizes: S-XXL (unisex)
 Care: Machine wash cold; tumble dry low with dryer balls.
 Final Sale: Navy color only. Final Sale items cannot be returned or exchanged.
 
-8. Merino Wool Sweater | SKU: UW-403
+Merino Wool Sweater (UW-403)
 Price: $89.99
 Material: 100% merino wool
 Colors: Grey, Camel, Dark Green
@@ -64,7 +64,7 @@ Care: Hand wash cold or dry clean; lay flat to dry.
 
 WOMEN'S CLOTHING
 
-9. Linen Summer Dress | SKU: UW-301
+Linen Summer Dress (UW-301)
 Price: $79.99
 Material: 100% linen
 Colors: White, Sand, Sage Green
@@ -72,14 +72,14 @@ Sizes: XS-XL (women's)
 Fit: True to size.
 Care: Machine wash cold; hang dry. Linen wrinkles naturally.
 
-10. Women's Ribbed Tank | SKU: UW-302
+Women's Ribbed Tank (UW-302)
 Price: $19.99
 Material: 95% cotton, 5% elastane
 Colors: White, Black, Beige
 Sizes: XS-XL (women's)
 Care: Machine wash cold; lay flat to dry.
 
-11. Wrap Midi Skirt | SKU: UW-303
+Wrap Midi Skirt (UW-303)
 Price: $49.99
 Material: 100% viscose
 Colors: Black, Rust, Emerald
@@ -89,28 +89,28 @@ Final Sale: Rust color only. Final Sale items cannot be returned or exchanged.
 
 ACCESSORIES
 
-12. Canvas Tote Bag | SKU: UW-501
+Canvas Tote Bag (UW-501)
 Price: $22.99
 Material: Heavy cotton canvas
 Colors: Natural, Black
 Size: One size (15 x 16 in)
 Care: Spot clean.
 
-13. Leather Belt | SKU: UW-502
+Leather Belt (UW-502)
 Price: $34.99
 Material: Genuine leather with brushed metal buckle
 Colors: Black, Brown
 Sizes: S, M, L, XL
 Care: Wipe with a dry cloth.
 
-14. Wool Beanie | SKU: UW-503
+Wool Beanie (UW-503)
 Price: $18.99
 Material: 100% wool
 Colors: Charcoal, Mustard, Navy
 Size: One size
 Care: Hand wash cold.
 
-15. Cotton Crew Socks, 3-Pack | SKU: UW-504
+Cotton Crew Socks, 3-Pack (UW-504)
 Price: $14.99
 Material: 80% cotton, 18% nylon, 2% elastane
 Colors: White, Black, Grey (each 3-pack contains one color)
