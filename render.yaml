@@ -19,6 +19,8 @@ services:
         sync: false
       - key: PORT
         value: 8000
+      - key: DATA_DIR               # orders, handoffs, feedback, unanswered: saved on the disk below
+        value: /app/data
 
     healthCheckPath: /health
 

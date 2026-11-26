@@ -4,7 +4,7 @@
 # ============================================================
 
 # ---------- Stage 1: Builder ----------
-FROM python:3.14-slim AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
@@ -17,7 +17,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ---------- Stage 2: Runtime ----------
-FROM python:3.14-slim AS runtime
+FROM python:3.12-slim AS runtime
 
 LABEL maintainer="muzahid"
 LABEL description="RAG Demo Chatbot — FastAPI + FAISS + Gemini"
@@ -48,11 +48,15 @@ COPY chunks.pkl* ./
 COPY vector_store.index* ./
 COPY unanswered.json* ./
 
+# Start script: fixes folder ownership of the Render disk, then runs the app as appuser
+COPY entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+
 # Ensure the app directory is owned by the non-root user
 RUN chown -R appuser:appuser /app
 
-# Switch to non-root user
-USER appuser
+# NOTE: no 'USER appuser' here. entrypoint.sh starts as root, fixes the ownership of
+# the Render disk (/app/data), then switches to appuser before the app starts.
 
 # Expose the application port
 EXPOSE 8000
@@ -63,6 +67,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Default port (can be overridden via $PORT env var)
 ENV PORT=8000
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Start the application
 CMD uvicorn api:app --host 0.0.0.0 --port ${PORT}

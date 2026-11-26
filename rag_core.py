@@ -22,7 +22,9 @@ import re
 import pickle
 import time
 import glob
+import shutil
 import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from dataclasses import dataclass, field
 
@@ -39,13 +41,25 @@ from chunker import chunk_document
 load_dotenv()
 
 # ---------------------------------------------------------
+# #Persistent Storage: ডেটা কোথায় সেভ হবে
+# DATA_DIR সেট করা থাকলে (Render-এ /app/data = Persistent Disk) ইনডেক্স, চাঙ্ক, লগ আর
+# আপলোড করা ডকুমেন্ট সব সেখানে থাকে, তাই Deploy/Restart-এ হারায় না।
+# সেট না থাকলে "." (প্রজেক্ট ফোল্ডার), অর্থাৎ নিজের পিসিতে (Windows) আগের মতোই চলে।
+# api.py আর orders_api.py-ও একই DATA_DIR ব্যবহার করে।
+# ---------------------------------------------------------
+DATA_DIR = os.getenv("DATA_DIR", ".")
+os.makedirs(DATA_DIR, exist_ok=True)   # লগ ফাইল খোলার আগেই ফোল্ডার থাকতে হবে
+
+# ---------------------------------------------------------
 # Logging
 # ---------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.FileHandler("rag_pipeline.log", encoding="utf-8"),
+        # ৫ MB হলে নতুন ফাইল, সর্বোচ্চ ৩টা পুরনো রাখা হয় — ১ GB ডিস্ক যেন লগে ভরে না যায়
+        RotatingFileHandler(os.path.join(DATA_DIR, "rag_pipeline.log"), maxBytes=5 * 1024 * 1024,
+                            backupCount=3, encoding="utf-8"),
         logging.StreamHandler(),
     ],
 )
@@ -60,9 +74,11 @@ gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 EMBEDDING_MODEL = "gemini-embedding-001"
 
 GEMINI_MODEL = "gemini-3.5-flash"
-INDEX_PATH = "vector_store.index"
-CHUNKS_PATH = "chunks.pkl"
-DOCS_FOLDER = "docs"          # এখানে txt/pdf ফাইল রাখলে সব একসাথে লোড হবে
+INDEX_PATH = os.path.join(DATA_DIR, "vector_store.index")
+CHUNKS_PATH = os.path.join(DATA_DIR, "chunks.pkl")
+DOCS_FOLDER = os.path.join(DATA_DIR, "docs")   # এখানে txt/pdf ফাইল রাখলে সব একসাথে লোড হবে (/upload-ও এখানে রাখে)
+# প্রজেক্টের সাথে আসা মূল ডকুমেন্ট (Docker ইমেজের ভেতরের docs/)। DATA_DIR আলাদা হলে প্রথমবার এখান থেকে কপি হয়।
+BUNDLED_DOCS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs")
 MAX_QUERY_CHARS = 1000        # #৫ Security: অস্বাভাবিক লম্বা ইনপুট আটকানো
 
 # #Answer Quality: উত্তর অসম্পূর্ণ আসার সমস্যা কমাতে এই চারটা মান বদলানো হয়েছে
@@ -269,13 +285,24 @@ def build_vector_store(embeddings: np.ndarray):
 
 
 def save_vector_store(index, chunks: list[Chunk], index_path: str = INDEX_PATH, chunks_path: str = CHUNKS_PATH):
+    # আগে অস্থায়ী (.tmp) ফাইলে লিখি, সফল হলে তবেই আসল ফাইলের জায়গায় বসাই —
+    # মাঝপথে ব্যর্থ হলে বা সার্ভার বন্ধ হলে আগের ভালো ইনডেক্স অক্ষত থাকে।
+    tmp_index, tmp_chunks = index_path + ".tmp", chunks_path + ".tmp"
     try:
-        faiss.write_index(index, index_path)
-        with open(chunks_path, "wb") as f:
+        os.makedirs(os.path.dirname(os.path.abspath(index_path)), exist_ok=True)
+        faiss.write_index(index, tmp_index)
+        with open(tmp_chunks, "wb") as f:
             pickle.dump(chunks, f)
+        os.replace(tmp_index, index_path)
+        os.replace(tmp_chunks, chunks_path)
         logger.info(f"💾 ইনডেক্স সেভ হলো: {index_path} ({len(chunks)}টা চাঙ্ক)")
     except Exception as e:
         logger.error(f"ইনডেক্স সেভ করতে সমস্যা হয়েছে: {e}")
+        for tmp in (tmp_index, tmp_chunks):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
         raise
 
 
@@ -859,9 +886,62 @@ def answer_query(query: str, index, chunks: list[Chunk], session: RagSession = N
     return result
 
 
+def _same_path(a: str, b: str) -> bool:
+    return os.path.realpath(a) == os.path.realpath(b)
+
+
+def _migrate_legacy_index():
+    """
+    আগের ভার্সনে ইনডেক্স/চাঙ্ক প্রজেক্ট ফোল্ডারে (বর্তমান ফোল্ডারে) সেভ হতো। DATA_DIR-এ এখনো কিছু না থাকলে
+    এবং পুরনো দুটো ফাইলই থাকলে সেগুলো কপি করা হয় — নতুন করে embedding-এর খরচ লাগে না।
+    পুরনো ফাইল মোছা হয় না।
+    """
+    pairs = [(INDEX_PATH, os.path.join(os.getcwd(), "vector_store.index")),
+             (CHUNKS_PATH, os.path.join(os.getcwd(), "chunks.pkl"))]
+    if any(_same_path(new, old) for new, old in pairs):
+        return  # DATA_DIR = প্রজেক্ট ফোল্ডার (লোকাল রান), কিছু করার নেই
+    if any(os.path.exists(new) for new, _ in pairs):
+        return  # নতুন জায়গায় আগে থেকেই কিছু আছে, ওভাররাইট করা হবে না
+    if not all(os.path.isfile(old) for _, old in pairs):
+        return
+    for new, old in pairs:
+        shutil.copy2(old, new)
+    logger.info(f"📦 পুরনো ইনডেক্স {DATA_DIR}-এ কপি করা হলো (নতুন করে embedding লাগেনি)।")
+
+
+def _seed_docs_folder():
+    """
+    DATA_DIR/docs ফোল্ডারে প্রজেক্টের মূল ডকুমেন্টগুলো শুধু একবার কপি করা হয় (.seeded চিহ্ন দিয়ে)।
+    - যে ফাইল আগে থেকেই আছে, ওভাররাইট হয় না (আপলোড করা বা বদলানো ফাইল নিরাপদ)
+    - পরে কোনো মূল ডকুমেন্ট ডিলিট করলে পরের Deploy-এ সেটা ফিরে আসে না
+    - DATA_DIR প্রজেক্ট ফোল্ডার হলে (লোকাল রান) কিছুই করা হয় না
+    """
+    if _same_path(BUNDLED_DOCS_FOLDER, DOCS_FOLDER) or not os.path.isdir(BUNDLED_DOCS_FOLDER):
+        return
+    os.makedirs(DOCS_FOLDER, exist_ok=True)
+    marker = os.path.join(DOCS_FOLDER, ".seeded")
+    if os.path.exists(marker):
+        return
+    copied = 0
+    for name in sorted(os.listdir(BUNDLED_DOCS_FOLDER)):
+        src, dst = os.path.join(BUNDLED_DOCS_FOLDER, name), os.path.join(DOCS_FOLDER, name)
+        if os.path.isfile(src) and name.lower().endswith((".txt", ".pdf", ".docx")) and not os.path.exists(dst):
+            shutil.copy2(src, dst)
+            copied += 1
+    with open(marker, "w", encoding="utf-8") as f:
+        f.write("মূল ডকুমেন্ট একবার কপি করা হয়েছে। এই ফাইলটা মুছবেন না।\n")
+    logger.info(f"📁 {copied}টা মূল ডকুমেন্ট {DOCS_FOLDER}-এ কপি করা হলো।")
+
+
 def get_or_build_index():
     """index/chunks লোড করে, না থাকলে docs/ ফোল্ডার থেকে বানায়।"""
+    _migrate_legacy_index()
+    _seed_docs_folder()
     index, chunks = load_vector_store()
+    if index is not None and index.ntotal != len(chunks):
+        # ইনডেক্স আর চাঙ্ক তালিকা না মিললে সার্চ ভুল উত্তর দেবে, তাই শুধু এই ক্ষেত্রে নতুন করে বানানো হয়
+        logger.error(f"ইনডেক্স ({index.ntotal}) আর চাঙ্ক ({len(chunks)}) মিলছে না, নতুন করে বানানো হবে।")
+        index = None
     if index is None:
         logger.info("📄 কোনো সেভ করা ইনডেক্স নেই, docs/ ফোল্ডার থেকে নতুন করে বানানো হচ্ছে...")
         index, chunks = build_index_from_folder()

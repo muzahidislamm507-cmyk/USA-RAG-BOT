@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UrbanWear Admin</title>
+<title>URBANWEAR Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -24,12 +24,12 @@ main{padding:24px 4vw 60px}
 .stat.warn{background:var(--warnbg);border-color:#F4C7C1}
 h2{font-size:26px;font-weight:800;margin:6px 0 12px}
 .wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:30px}
-table{width:100%;border-collapse:collapse;min-width:720px}
+table{width:100%;border-collapse:collapse;min-width:760px}
 th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
 th{color:var(--mute);font-weight:500;font-size:13px}
 tr:last-child td{border-bottom:0}
 select,input{font:inherit;padding:6px 8px;border:1.5px solid var(--line);border-radius:6px;background:#fff}
-input[type=number]{width:96px}
+input[type=number]{width:110px}
 .low td{background:var(--warnbg)}
 .tag{color:var(--warn);font-weight:600;margin-left:6px}
 .sub{color:var(--mute);font-size:13px}
@@ -43,7 +43,7 @@ input[type=number]{width:96px}
 </head>
 <body>
 <header>
-  <span class="logo">UrbanWear Admin</span>
+  <span class="logo">URBANWEAR Admin</span>
   <a href="/report">Customer requests</a>
   <a href="store.html">View store</a>
 </header>
@@ -55,26 +55,26 @@ input[type=number]{width:96px}
 
   <h2>Orders</h2>
   <div class="wrap"><table>
-    <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th></tr></thead>
+    <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total (USD)</th><th>Status</th></tr></thead>
     <tbody id="orders"></tbody>
   </table></div>
 
   <h2>Products and stock</h2>
   <div class="wrap"><table>
-    <thead><tr><th>Product</th><th>Price</th><th>In stock</th></tr></thead>
+    <thead><tr><th>Product</th><th>Price (USD)</th><th>In stock</th></tr></thead>
     <tbody id="products"></tbody>
   </table></div>
   </div>
 </main>
 
 <script>
-const CUR = "৳";
 const API = "";   // same server as the bot
 const STAGES = ["Placed","Packed","Shipped","Delivered"];
+const SHIP_LABEL = { standard: "Standard Shipping", express: "Express Shipping" };
 const LOW = 5;
 
 const $ = id => document.getElementById(id);
-const money = n => CUR + (n || 0).toLocaleString("en-US");
+const money = c => "$" + ((c || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 let KEY = "";
@@ -104,26 +104,28 @@ async function load() {
 
 function render() {
   const open = orders.filter(o => o.stage < 3).length;
-  const sales = orders.reduce((a, o) => a + (o.total || 0), 0);
+  const sales = orders.reduce((a, o) => a + (o.total_cents || 0), 0);
   const low = products.filter(p => p.stock <= LOW).length;
   $("stats").innerHTML =
     `<div class="stat"><b>${orders.length}</b><span>Total orders</span></div>
      <div class="stat"><b>${open}</b><span>Not delivered yet</span></div>
-     <div class="stat"><b>${money(sales)}</b><span>Total sales</span></div>
+     <div class="stat"><b>${money(sales)}</b><span>Total sales (incl. shipping)</span></div>
      <div class="stat ${low ? "warn" : ""}"><b>${low}</b><span>Products low on stock</span></div>`;
 
   $("orders").innerHTML = orders.map(o => {
-    const items = (o.items || []).map(i => `${esc(i.name)} (${esc(i.size)}) x${i.qty}`).join("<br>");
+    const items = (o.items || []).map(i =>
+      `${esc(i.name)} <span class="sub">${esc(i.sku)}</span> (${esc(i.color)}, ${esc(i.size)}) x${i.qty}${i.final_sale ? '<span class="tag">Final Sale</span>' : ""}`).join("<br>");
     return `<tr><td><strong>${esc(o.order_id)}</strong><div class="sub">${esc(o.date)}</div></td>
-      <td>${esc(o.name)}<div class="sub">${esc(o.phone)}<br>${esc(o.addr)}</div></td>
-      <td>${items}</td><td>${money(o.total)}</td>
+      <td>${esc(o.name)}<div class="sub">${esc(o.email)}<br>${esc(o.addr)}</div></td>
+      <td>${items}</td>
+      <td>${money(o.total_cents)}<div class="sub">Items ${money(o.subtotal_cents)}<br>${esc(SHIP_LABEL[o.shipping_method] || o.shipping_method)} ${o.shipping_cents ? money(o.shipping_cents) : "(free)"}</div></td>
       <td><select data-o="${esc(o.order_id)}" aria-label="Status of ${esc(o.order_id)}">${STAGES.map((s, i) => `<option value="${i}" ${i === o.stage ? "selected" : ""}>${s}</option>`).join("")}</select></td></tr>`;
   }).join("");
 
   $("products").innerHTML = products.map(p =>
-    `<tr class="${p.stock <= LOW ? "low" : ""}"><td>${esc(p.name)}${p.stock < 1 ? '<span class="tag">Sold out</span>' : p.stock <= LOW ? '<span class="tag">Low stock</span>' : ""}</td>
-     <td><input type="number" min="0" value="${p.price}" data-p="${p.id}" data-f="price" aria-label="Price of ${esc(p.name)}"></td>
-     <td><input type="number" min="0" value="${p.stock}" data-p="${p.id}" data-f="stock" aria-label="Stock of ${esc(p.name)}"></td></tr>`).join("");
+    `<tr class="${p.stock <= LOW ? "low" : ""}"><td>${esc(p.name)} <span class="sub">${esc(p.sku)}</span>${p.stock < 1 ? '<span class="tag">Sold out</span>' : p.stock <= LOW ? '<span class="tag">Low stock</span>' : ""}</td>
+     <td><input type="number" min="0" step="0.01" value="${(p.price_cents / 100).toFixed(2)}" data-p="${p.id}" data-f="price" aria-label="Price of ${esc(p.name)} in US dollars"></td>
+     <td><input type="number" min="0" step="1" value="${p.stock}" data-p="${p.id}" data-f="stock" aria-label="Stock of ${esc(p.name)}"></td></tr>`).join("");
 }
 
 $("unlock").onclick = () => {
@@ -142,7 +144,11 @@ $("orders").onchange = async e => {
 };
 $("products").onchange = async e => {
   const id = e.target.dataset.p; if (!id) return;
-  const body = {}; body[e.target.dataset.f] = Math.max(0, Math.floor(+e.target.value || 0));
+  const body = {}, v = +e.target.value;
+  if (!isFinite(v) || v < 0) { alert("Please enter a number that is 0 or more."); load(); return; }
+  // price is typed in dollars (24.99) and sent to the server in cents (2499)
+  if (e.target.dataset.f === "price") body.price_cents = Math.round(v * 100);
+  else body.stock = Math.floor(v);
   try { await call("/api/admin/products/" + id, { method: "PATCH", body: JSON.stringify(body) }); }
   catch (err) { alert(err.message); }
   load();

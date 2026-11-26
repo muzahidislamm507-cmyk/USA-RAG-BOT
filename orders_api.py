@@ -1,18 +1,26 @@
 """
-UrbanWear ডেমো স্টোরের অর্ডার ও প্রোডাক্ট সার্ভারে রাখার মডিউল।
+URBANWEAR demo store: orders and products kept on the server.
 
-স্টোর, অ্যাডমিন প্যানেল আর চ্যাটবট তিনজনই এখান থেকে একই তথ্য পড়বে।
-ডেটা `store_data.json` ফাইলে সেভ হয় (ফাইল না থাকলে ডেমো ডেটা দিয়ে নিজে তৈরি হয়)।
+The store page, the admin page and the chatbot all read the same data from here.
+Data is saved in `store_data.json` (created automatically with demo data if missing).
 
-এন্ডপয়েন্ট:
-    GET   /api/products                  : সবার জন্য, প্রোডাক্ট ও স্টক
-    POST  /api/orders                    : সবার জন্য, নতুন অর্ডার (দাম সার্ভারই হিসাব করে)
-    GET   /api/orders/{id}               : সবার জন্য, ট্র্যাকিং (নাম/ফোন/ঠিকানা দেখায় না)
-    GET   /api/admin/orders              : শুধু ADMIN_KEY দিয়ে, সব অর্ডার
-    PATCH /api/admin/orders/{id}         : শুধু ADMIN_KEY দিয়ে, স্ট্যাটাস বদল
-    PATCH /api/admin/products/{id}       : শুধু ADMIN_KEY দিয়ে, দাম ও স্টক বদল
+Everything in the product list below comes from docs/04-product-catalog.txt
+(names, SKUs, prices in USD, colors, sizes, Final Sale items).
+Shipping rules come from docs/02-shipping-policy.txt.
 
-চ্যাটবটের জন্য: order_reply(query) ফাংশন প্রশ্নে অর্ডার নম্বর পেলে বাংলায় উত্তর বানিয়ে দেয়।
+Endpoints:
+    GET   /api/config                    : public, shipping rules (price, speed)
+    GET   /api/products                  : public, products and stock
+    POST  /api/orders                    : public, place an order (the server calculates all prices)
+    POST  /api/orders/track              : public, track an order (needs order number AND email)
+    GET   /api/admin/orders              : ADMIN_KEY only, all orders
+    PATCH /api/admin/orders/{id}         : ADMIN_KEY only, change status
+    PATCH /api/admin/products/{id}       : ADMIN_KEY only, change price and stock
+
+Prices are stored in CENTS (integers) so there are no rounding mistakes. 2499 = $24.99.
+
+For the chatbot: order_reply(query) builds an English answer when the question contains
+an order number (like ORD-1001) and the email used for the order.
 """
 
 import os
@@ -31,18 +39,36 @@ from pydantic import BaseModel, Field
 log = logging.getLogger("orders_api")
 
 DATA_FILE = os.path.join(os.getenv("DATA_DIR", "."), "store_data.json")
+DATA_VERSION = 2   # old (Bangladesh demo) files have no version, so they are replaced safely
 ADMIN_KEY = os.getenv("ADMIN_KEY", "")
-STATUS_BN = [
-    "অর্ডার গ্রহণ করা হয়েছে",
-    "প্যাকিং হয়ে গেছে, কুরিয়ারের জন্য অপেক্ষা করছে",
-    "কুরিয়ারে পাঠানো হয়েছে",
-    "ডেলিভারি সম্পন্ন হয়েছে",
-]
 _lock = threading.Lock()
+
+STATUS_EN = [
+    "Order received",
+    "Packed, waiting for carrier pickup",
+    "Shipped",
+    "Delivered",
+]
+
+# ---------------------------------------------------------
+# Shipping rules (docs/02-shipping-policy.txt, section 2)
+# ---------------------------------------------------------
+SHIPPING = {
+    "standard": {"label": "Standard Shipping", "cost_cents": 499, "eta": "3-5 business days"},
+    "express": {"label": "Express Shipping", "cost_cents": 1299, "eta": "1-2 business days"},
+}
+FREE_STANDARD_OVER_CENTS = 7500   # "Free standard shipping on orders over $75"
+_PO_BOX = re.compile(r"\bP\.?\s*O\.?\s*Box\b", re.I)   # Express is not available for PO boxes
+
+
+def shipping_cost(method: str, subtotal_cents: int) -> int:
+    if method == "standard" and subtotal_cents > FREE_STANDARD_OVER_CENTS:
+        return 0
+    return SHIPPING[method]["cost_cents"]
 
 
 # ---------------------------------------------------------
-# রেট লিমিট (প্রতি IP, প্রতি মিনিটে ৩০টা) ও অ্যাডমিন চাবি যাচাই
+# Rate limit (per IP, 30 per minute) and admin key check
 # ---------------------------------------------------------
 _hits: dict[str, deque] = defaultdict(deque)
 
@@ -54,49 +80,108 @@ def rate_limit(request: Request):
     while q and now - q[0] > 60:
         q.popleft()
     if len(q) >= 30:
-        raise HTTPException(status_code=429, detail="অনেক বেশি রিকোয়েস্ট হয়ে গেছে, একটু পর আবার চেষ্টা করুন।")
+        raise HTTPException(status_code=429, detail="Too many requests. Please try again in a minute.")
     q.append(now)
 
 
 def require_admin(request: Request, x_admin_key: str = Header(default="")):
     if not ADMIN_KEY:
-        raise HTTPException(status_code=503, detail="সার্ভারে ADMIN_KEY সেট করা নেই, তাই এই কাজ বন্ধ আছে।")
+        raise HTTPException(status_code=503, detail="ADMIN_KEY is not set on the server, so this action is disabled.")
     if not hmac.compare_digest(x_admin_key.encode("utf-8"), ADMIN_KEY.encode("utf-8")):
-        raise HTTPException(status_code=401, detail="অনুমতি নেই, সঠিক admin key দিন।")
+        raise HTTPException(status_code=401, detail="Not allowed. Please enter the correct admin key.")
 
 
 router = APIRouter(prefix="/api", dependencies=[Depends(rate_limit)])
 
 
 # ---------------------------------------------------------
-# ডেটা ফাইল পড়া ও লেখা
+# Demo data (the product list is copied from docs/04-product-catalog.txt)
 # ---------------------------------------------------------
-def _default_data() -> dict:
-    products = [
-        (1, "Daily Tee", "T-shirts", 650, 25, ["S", "M", "L", "XL"]),
-        (2, "Heavy Tee", "T-shirts", 850, 18, ["S", "M", "L", "XL"]),
-        (3, "Commuter Hoodie", "Hoodies", 1850, 12, ["M", "L", "XL"]),
-        (4, "Zip Hoodie", "Hoodies", 2100, 4, ["M", "L", "XL"]),
-        (5, "Stretch Jogger", "Bottoms", 1450, 20, ["S", "M", "L", "XL"]),
-        (6, "Cargo Pant", "Bottoms", 1750, 9, ["30", "32", "34", "36"]),
-        (7, "Canvas Cap", "Accessories", 480, 30, ["One size"]),
-        (8, "Tote Bag", "Accessories", 550, 2, ["One size"]),
-    ]
+# Stock is NOT in the catalog document. Every product starts with the same
+# placeholder number; change it in the admin page.
+DEFAULT_STOCK = 25
+
+TOPS = ["S", "M", "L", "XL", "XXL"]
+TOPS_XL = ["S", "M", "L", "XL"]
+WOMENS = ["XS", "S", "M", "L", "XL"]
+PANTS = [f"{w}x{i}" for w in (30, 32, 34, 36) for i in (30, 32, 34)]   # waist x inseam, inches
+ONE = ["One size"]
+
+MENS = "Men's and Unisex"
+WOMEN = "Women's"
+ACC = "Accessories"
+
+
+def _p(pid, sku, name, cat, price_cents, material, colors, sizes, care, details=None, final_sale=None):
     return {
-        "products": [
-            {"id": i, "name": n, "cat": c, "price": p, "stock": s, "sizes": z}
-            for i, n, c, p, s, z in products
-        ],
+        "id": pid, "sku": sku, "name": name, "cat": cat, "price_cents": price_cents,
+        "material": material, "colors": colors, "sizes": sizes, "care": care,
+        "details": details or [], "final_sale": final_sale or [],   # ["Navy"] = that color only, ["*"] = all colors
+        "stock": DEFAULT_STOCK,
+    }
+
+
+def _catalog() -> list:
+    return [
+        _p(1, "UW-101", "Classic Cotton Tee", MENS, 2499, "100% organic cotton",
+           ["White", "Black", "Navy", "Grey"], TOPS, "Machine wash cold; tumble dry low.", ["Men's sizing"]),
+        _p(2, "UW-102", "Everyday Hoodie", MENS, 5499, "80% cotton, 20% polyester fleece",
+           ["Black", "Charcoal", "Forest Green"], TOPS, "Machine wash cold; do not bleach.", ["Men's sizing"]),
+        _p(3, "UW-103", "Oversized Hoodie", MENS, 5999, "100% heavyweight cotton",
+           ["Cream", "Black", "Dusty Pink"], TOPS_XL, "Machine wash cold; tumble dry low.",
+           ["Unisex sizing", "Fit: oversized, loose fit"]),
+        _p(4, "UW-201", "Slim Fit Jeans", MENS, 6499, "98% cotton, 2% elastane (stretch denim)",
+           ["Dark Blue", "Light Blue", "Black"], PANTS, "Machine wash inside out in cold water.",
+           ["Sizes are waist x inseam, in inches"]),
+        _p(5, "UW-202", "Relaxed Chino Pants", MENS, 5999, "97% cotton, 3% elastane",
+           ["Khaki", "Olive", "Navy"], PANTS, "Machine wash warm; iron on medium if needed.",
+           ["Sizes are waist x inseam, in inches"]),
+        _p(6, "UW-401", "Waterproof Rain Jacket", MENS, 9999, "Recycled polyester shell with waterproof coating",
+           ["Black", "Olive", "Yellow"], TOPS, "Machine wash cold; do not use fabric softener.", ["Unisex sizing"]),
+        _p(7, "UW-402", "Puffer Vest", MENS, 8499, "Recycled polyester fill and shell",
+           ["Black", "Navy"], TOPS, "Machine wash cold; tumble dry low with dryer balls.",
+           ["Unisex sizing"], final_sale=["Navy"]),
+        _p(8, "UW-403", "Merino Wool Sweater", MENS, 8999, "100% merino wool",
+           ["Grey", "Camel", "Dark Green"], TOPS_XL, "Hand wash cold or dry clean; lay flat to dry.", ["Unisex sizing"]),
+        _p(9, "UW-301", "Linen Summer Dress", WOMEN, 7999, "100% linen",
+           ["White", "Sand", "Sage Green"], WOMENS, "Machine wash cold; hang dry. Linen wrinkles naturally.",
+           ["Women's sizing", "Fit: true to size"]),
+        _p(10, "UW-302", "Women's Ribbed Tank", WOMEN, 1999, "95% cotton, 5% elastane",
+           ["White", "Black", "Beige"], WOMENS, "Machine wash cold; lay flat to dry.", ["Women's sizing"]),
+        _p(11, "UW-303", "Wrap Midi Skirt", WOMEN, 4999, "100% viscose",
+           ["Black", "Rust", "Emerald"], WOMENS, "Hand wash cold or dry clean.",
+           ["Women's sizing"], final_sale=["Rust"]),
+        _p(12, "UW-501", "Canvas Tote Bag", ACC, 2299, "Heavy cotton canvas",
+           ["Natural", "Black"], ONE, "Spot clean.", ["One size (15 x 16 in)"]),
+        _p(13, "UW-502", "Leather Belt", ACC, 3499, "Genuine leather with brushed metal buckle",
+           ["Black", "Brown"], TOPS_XL, "Wipe with a dry cloth."),
+        _p(14, "UW-503", "Wool Beanie", ACC, 1899, "100% wool",
+           ["Charcoal", "Mustard", "Navy"], ONE, "Hand wash cold."),
+        _p(15, "UW-504", "Cotton Crew Socks, 3-Pack", ACC, 1499, "80% cotton, 18% nylon, 2% elastane",
+           ["White", "Black", "Grey"], ONE, "Machine wash warm.",
+           ["Fits US shoe sizes 7-12", "Each 3-pack contains one color"], final_sale=["*"]),
+    ]
+
+
+def _default_data() -> dict:
+    # Two fictional sample orders so the "Track order" page can be tried right away.
+    return {
+        "version": DATA_VERSION,
+        "products": _catalog(),
         "orders": {
-            "UW-1001": {
-                "stage": 2, "name": "Rahim Uddin", "phone": "01711-000001", "addr": "Mirpur, Dhaka",
-                "items": [{"name": "Commuter Hoodie", "size": "L", "qty": 1, "price": 1850}],
-                "total": 1850, "date": "2026-10-14",
+            "ORD-1001": {
+                "stage": 2, "name": "Alex Morgan", "email": "alex.morgan@example.com",
+                "addr": "123 Main St, Austin, TX 78701", "shipping_method": "standard",
+                "items": [{"sku": "UW-102", "name": "Everyday Hoodie", "color": "Black", "size": "L",
+                           "qty": 1, "price_cents": 5499, "final_sale": False}],
+                "subtotal_cents": 5499, "shipping_cents": 499, "total_cents": 5998, "date": "2026-11-20",
             },
-            "UW-1002": {
-                "stage": 1, "name": "Nusrat Jahan", "phone": "01811-000002", "addr": "Khulna Sadar",
-                "items": [{"name": "Daily Tee", "size": "M", "qty": 2, "price": 650}],
-                "total": 1300, "date": "2026-10-15",
+            "ORD-1002": {
+                "stage": 1, "name": "Taylor Brooks", "email": "taylor.brooks@example.com",
+                "addr": "45 Oak Ave, Denver, CO 80202", "shipping_method": "standard",
+                "items": [{"sku": "UW-101", "name": "Classic Cotton Tee", "color": "White", "size": "M",
+                           "qty": 2, "price_cents": 2499, "final_sale": False}],
+                "subtotal_cents": 4998, "shipping_cents": 499, "total_cents": 5497, "date": "2026-11-22",
             },
         },
     }
@@ -106,32 +191,49 @@ def _save(data: dict):
     tmp = DATA_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
-    os.replace(tmp, DATA_FILE)  # মাঝপথে বন্ধ হয়ে গেলেও ফাইল নষ্ট হয় না
+    os.replace(tmp, DATA_FILE)  # the file is never half-written, even if the server stops
 
 
 def _load() -> dict:
-    if not os.path.exists(DATA_FILE):
-        data = _default_data()
-        _save(data)
-        return data
-    with open(DATA_FILE, encoding="utf-8") as f:
-        return json.load(f)
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        if data.get("version") == DATA_VERSION:
+            return data
+        # Old demo data (different products, prices in taka): keep a copy, start fresh.
+        os.replace(DATA_FILE, DATA_FILE + ".old")
+        log.warning("Old store_data.json replaced with the URBANWEAR USA demo data (old copy: %s.old)", DATA_FILE)
+    data = _default_data()
+    _save(data)
+    return data
+
+
+def _is_final_sale(p: dict, color: str) -> bool:
+    fs = p.get("final_sale", [])
+    return "*" in fs or color in fs
 
 
 # ---------------------------------------------------------
-# রিকোয়েস্টের ছাঁচ (ভুল বা অতিরিক্ত বড় ইনপুট এখানেই আটকে যায়)
+# Request shapes (wrong or oversized input is stopped here)
 # ---------------------------------------------------------
 class OrderItem(BaseModel):
     product_id: int
     size: str = Field(..., min_length=1, max_length=20)
+    color: str = Field(..., min_length=1, max_length=40)
     qty: int = Field(..., ge=1, le=20)
 
 
 class OrderCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    phone: str = Field(..., min_length=3, max_length=20)
-    addr: str = Field(..., min_length=3, max_length=300)
+    email: str = Field(..., min_length=5, max_length=100)
+    addr: str = Field(..., min_length=5, max_length=300)
+    shipping_method: str = Field(default="standard", max_length=20)
     items: list[OrderItem] = Field(..., min_length=1, max_length=20)
+
+
+class TrackRequest(BaseModel):
+    order_id: str = Field(..., min_length=3, max_length=20)
+    email: str = Field(..., min_length=5, max_length=100)
 
 
 class StagePatch(BaseModel):
@@ -139,13 +241,25 @@ class StagePatch(BaseModel):
 
 
 class ProductPatch(BaseModel):
-    price: int | None = Field(default=None, ge=0, le=10_000_000)
+    price_cents: int | None = Field(default=None, ge=0, le=10_000_000)
     stock: int | None = Field(default=None, ge=0, le=1_000_000)
 
 
+_EMAIL_OK = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _same_email(a: str, b: str) -> bool:
+    return hmac.compare_digest(a.strip().lower().encode("utf-8"), b.strip().lower().encode("utf-8"))
+
+
 # ---------------------------------------------------------
-# সবার জন্য খোলা এন্ডপয়েন্ট
+# Open to everyone
 # ---------------------------------------------------------
+@router.get("/config")
+def get_config():
+    return {"shipping": SHIPPING, "free_standard_over_cents": FREE_STANDARD_OVER_CENTS}
+
+
 @router.get("/products")
 def list_products():
     with _lock:
@@ -154,6 +268,13 @@ def list_products():
 
 @router.post("/orders")
 def create_order(req: OrderCreate):
+    if not _EMAIL_OK.match(req.email.strip()):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+    if req.shipping_method not in SHIPPING:
+        raise HTTPException(status_code=400, detail="Please choose Standard or Express shipping.")
+    if req.shipping_method == "express" and _PO_BOX.search(req.addr):
+        raise HTTPException(status_code=400, detail="Express Shipping is not available for PO boxes. Please choose Standard Shipping.")
+
     with _lock:
         data = _load()
         prods = {p["id"]: p for p in data["products"]}
@@ -162,49 +283,61 @@ def create_order(req: OrderCreate):
         for it in req.items:
             p = prods.get(it.product_id)
             if not p:
-                raise HTTPException(status_code=400, detail="একটা প্রোডাক্ট খুঁজে পাওয়া যায়নি।")
+                raise HTTPException(status_code=400, detail="One of the products could not be found.")
             if it.size not in p["sizes"]:
-                raise HTTPException(status_code=400, detail=f"'{p['name']}'-এর এই সাইজ নেই।")
+                raise HTTPException(status_code=400, detail=f"'{p['name']}' is not available in size {it.size}.")
+            if it.color not in p["colors"]:
+                raise HTTPException(status_code=400, detail=f"'{p['name']}' is not available in {it.color}.")
             need[it.product_id] += it.qty
         for pid, q in need.items():
             if prods[pid]["stock"] < q:
-                raise HTTPException(status_code=409, detail=f"'{prods[pid]['name']}'-এর যথেষ্ট স্টক নেই।")
+                raise HTTPException(status_code=409, detail=f"Sorry, '{prods[pid]['name']}' does not have enough stock.")
 
-        items, total = [], 0
+        items, subtotal = [], 0
         for it in req.items:
             p = prods[it.product_id]
-            items.append({"name": p["name"], "size": it.size, "qty": it.qty, "price": p["price"]})
-            total += p["price"] * it.qty
+            items.append({
+                "sku": p["sku"], "name": p["name"], "color": it.color, "size": it.size, "qty": it.qty,
+                "price_cents": p["price_cents"], "final_sale": _is_final_sale(p, it.color),
+            })
+            subtotal += p["price_cents"] * it.qty
         for pid, q in need.items():
             prods[pid]["stock"] -= q
 
+        ship = shipping_cost(req.shipping_method, subtotal)
         nums = [int(k.split("-")[1]) for k in data["orders"]]
-        order_id = f"UW-{max(nums + [1002]) + 1}"
+        order_id = f"ORD-{max(nums + [1000]) + 1}"
         data["orders"][order_id] = {
-            "stage": 0, "name": req.name.strip(), "phone": req.phone.strip(), "addr": req.addr.strip(),
-            "items": items, "total": total, "date": date.today().isoformat(),
+            "stage": 0, "name": req.name.strip(), "email": req.email.strip().lower(), "addr": req.addr.strip(),
+            "shipping_method": req.shipping_method, "items": items,
+            "subtotal_cents": subtotal, "shipping_cents": ship, "total_cents": subtotal + ship,
+            "date": date.today().isoformat(),
         }
         _save(data)
-    log.info("নতুন অর্ডার: %s (মোট %s)", order_id, total)
-    return {"order_id": order_id, "total": total}
+    log.info("New order: %s (total %s cents)", order_id, subtotal + ship)
+    return {"order_id": order_id, "subtotal_cents": subtotal, "shipping_cents": ship, "total_cents": subtotal + ship}
 
 
-@router.get("/orders/{order_id}")
-def track_order(order_id: str):
+@router.post("/orders/track")
+def track_order(req: TrackRequest):
+    # Policy: tracking needs the order number AND the email address.
+    # A wrong number and a wrong email give the same answer, so nobody can guess order numbers.
+    oid = req.order_id.strip().upper()
     with _lock:
-        o = _load()["orders"].get(order_id.upper())
-    if not o:
-        raise HTTPException(status_code=404, detail="এই নম্বরে কোনো অর্ডার পাওয়া যায়নি।")
-    # ট্র্যাকিং পাবলিক, তাই নাম, ফোন আর ঠিকানা ইচ্ছা করেই বাদ রাখা হয়েছে
+        o = _load()["orders"].get(oid)
+    if not o or not _same_email(o["email"], req.email):
+        raise HTTPException(status_code=404, detail="We could not find an order with that order number and email.")
     return {
-        "order_id": order_id.upper(), "stage": o["stage"], "status": STATUS_BN[o["stage"]],
-        "items": [{"name": i["name"], "size": i["size"], "qty": i["qty"]} for i in o["items"]],
+        "order_id": oid, "stage": o["stage"], "status": STATUS_EN[o["stage"]],
+        "shipping_method": o["shipping_method"], "eta": SHIPPING[o["shipping_method"]]["eta"],
+        "items": [{"name": i["name"], "color": i["color"], "size": i["size"], "qty": i["qty"],
+                   "final_sale": i.get("final_sale", False)} for i in o["items"]],
         "date": o["date"],
     }
 
 
 # ---------------------------------------------------------
-# শুধু অ্যাডমিনের জন্য
+# Admin only
 # ---------------------------------------------------------
 @router.get("/admin/orders", dependencies=[Depends(require_admin)])
 def admin_orders():
@@ -221,7 +354,7 @@ def admin_set_stage(order_id: str, req: StagePatch):
         data = _load()
         o = data["orders"].get(order_id.upper())
         if not o:
-            raise HTTPException(status_code=404, detail="এই নম্বরে কোনো অর্ডার নেই।")
+            raise HTTPException(status_code=404, detail="No order with this number.")
         o["stage"] = req.stage
         _save(data)
     return {"order_id": order_id.upper(), "stage": req.stage}
@@ -233,9 +366,9 @@ def admin_edit_product(product_id: int, req: ProductPatch):
         data = _load()
         p = next((x for x in data["products"] if x["id"] == product_id), None)
         if not p:
-            raise HTTPException(status_code=404, detail="প্রোডাক্ট খুঁজে পাওয়া যায়নি।")
-        if req.price is not None:
-            p["price"] = req.price
+            raise HTTPException(status_code=404, detail="Product not found.")
+        if req.price_cents is not None:
+            p["price_cents"] = req.price_cents
         if req.stock is not None:
             p["stock"] = req.stock
         _save(data)
@@ -243,29 +376,43 @@ def admin_edit_product(product_id: int, req: ProductPatch):
 
 
 # ---------------------------------------------------------
-# চ্যাটবটের জন্য: প্রশ্নে অর্ডার নম্বর থাকলে আসল অর্ডার দেখে বাংলায় উত্তর
-# কিছু না মিললে None ফেরত দেয়, তখন বট সাধারণ নিয়মে ডকুমেন্ট থেকে উত্তর দেবে।
+# For the chatbot: if the question has an order number AND the email used for the order,
+# look up the real order and answer in English. Otherwise ask for what is missing.
+# Returns None when the question is not about an order, so the bot answers from the documents.
 # ---------------------------------------------------------
-_ORDER_ID = re.compile(r"(?<![A-Za-z0-9])UW[-\s]?(\d{3,6})(?!\d)", re.I)
+_ORDER_ID = re.compile(r"(?<![A-Za-z0-9])ORD[-\s]?(\d{4,6})(?!\d)", re.I)
+_EMAIL_IN_TEXT = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 _ORDER_INTENT = re.compile(
-    r"(অর্ডার|order|পার্সেল|parcel).*(কোথায়|কই|স্ট্যাটাস|ট্র্যাক|track|status|where)"
-    r"|(কোথায়|কই|স্ট্যাটাস|ট্র্যাক|track|status|where).*(অর্ডার|order|পার্সেল|parcel)",
+    r"(order|parcel|package).*(where|status|track)"
+    r"|(where|status|track).*(order|parcel|package)",
     re.I | re.S,
 )
+
+
+def _money(cents: int) -> str:
+    return f"${cents / 100:,.2f}"
 
 
 def order_reply(query: str) -> str | None:
     m = _ORDER_ID.search(query)
     if not m:
         if _ORDER_INTENT.search(query):
-            return "অর্ডারের অবস্থা দেখতে আপনার অর্ডার নম্বরটা লিখুন (যেমন: UW-1001)।"
+            return "To check your order, please send your order number (for example ORD-1001) and the email address used for the order."
         return None
 
-    order_id = f"UW-{m.group(1)}"
+    order_id = f"ORD-{m.group(1)}"
+    em = _EMAIL_IN_TEXT.search(query)
+    if not em:
+        return f"To check {order_id}, please also send the email address used for the order."
+
     with _lock:
         o = _load()["orders"].get(order_id)
-    if not o:
-        return f"দুঃখিত, {order_id} নম্বরে কোনো অর্ডার খুঁজে পাইনি। নম্বরটা আরেকবার দেখে নিন।"
+    if not o or not _same_email(o["email"], em.group(0).strip(".,;:!?")):
+        return "Sorry, I could not find an order with that order number and email. Please check both and try again."
 
-    items = ", ".join(f"{i['name']} ({i['size']}) x{i['qty']}" for i in o["items"])
-    return f"আপনার অর্ডার {order_id}-এর অবস্থা: {STATUS_BN[o['stage']]}।\nপণ্য: {items}\nমোট: ৳{o['total']}"
+    items = ", ".join(f"{i['name']} ({i['color']}, {i['size']}) x{i['qty']}" for i in o["items"])
+    ship = SHIPPING[o["shipping_method"]]
+    return (f"Order {order_id}: {STATUS_EN[o['stage']]}.\n"
+            f"Items: {items}\n"
+            f"Shipping: {ship['label']} ({ship['eta']})\n"
+            f"Total: {_money(o['total_cents'])}")
